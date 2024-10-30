@@ -1,0 +1,128 @@
+Project context
+Un centre de formation souhaite digitaliser la gestion de ses formations via une API REST. Cette plateforme servira à gérer les formations, les apprenants, les formateurs et les sessions de formation
+
+​
+
+Fonctionnalités principales :
+
+​
+
+Gestion des apprenants (inscription, modification, suppression, affichage d'un ou plusieurs)
+Gestion des formateurs (création, modification, suppression, affichage d'un ou plusieurs)
+Gestion des formations (planification, modification, suppression, affichage d'un ou plusieurs)
+Gestion des Classe (création, modification, suppression, affichage d'un ou plusieurs)
+
+​
+
+Structure des classes principales :
+
+Apprenant (nom, prénom, email, niveau, formation, classe)
+Formateur (nom, prénom, email, specialite, formation, classe)
+Classe (nom, numSalle)
+Formation (titre, niveau, prerequis, capaciteMin, capaciteMax, dateDebut, dateFin, formateur, apprenants, statut[PLANIFIEE, EN_COURS, TERMINEE, ANNULEE])
+
+​
+
+Couches applicatives :
+
+Entités (avec annotations JPA et validation)
+Repositories (extends JpaRepository)
+Services
+Controllers (REST)
+Exceptions
+Utilitaire
+Tests
+
+​
+
+Technologies et concepts à utiliser :
+
+​
+
+Spring Boot :
+
+Création de projet avec Spring Initializer/IDE
+Configuration via application.properties
+Profiles (dev, prod) -- application-dev.properties (profil dev) -- application-prod.properties (profil prod)
+Configuration sans XML (utiliser les annotations) sauf si c'est vraiment nécessaire
+​
+
+REST API :
+- Endpoints CRUD pour les entités nécessaires
+- Gestion des méthodes HTTP (GET, POST, PUT, DELETE) avec des annotations
+- Bonnes pratiques REST (nommage des URLs, codes HTTP appropriés)
+- Utilisation des annotations nécessaires
+- Tests via Postman ou autre outil similaire
+- Swagger pour la documentation API (dépendance sur pom.xml)
+
+​
+
+Spring Data JPA à la place de JPA/Hibernate :
+
+JpaRepository et ses méthodes de base
+Création de méthodes de recherche personnalisées (avec et sans @Query)
+Implémentation de la pagination
+Exemples de méthodes attendues : * findByXxx * findByXxxAndYyy * Méthodes avec @Query et @Param * Méthodes avec pagination (Pageable)
+​
+
+Gestion des exceptions avec des classes
+
+​
+
+Spring Scopes : Singleton / Prototype
+
+​
+
+Validation en utilisant des annotations de validation (@Valid, @NotNull, etc.)
+
+​
+
+Bases de données à utiliser :
+
+H2 (profil dev) : pour développement et tests
+PostgreSQL (profil prod) : pour l'environnement de production
+
+​
+
+Exigences techniques à utiliser :
+
+Utiliser les annotations pour l'Inversion of Control (IoC) et la Dependency Injection (DI) et autres annotations
+Anciennes exigences techniques à ré-utiliser :
+Utiliser JaCoCo pour mesurer la couverture du code
+Développer avec Java 8
+Utiliser Maven pour la gestion des dépendances
+Créer des tests unitaires et tests d'intégration avec JUnit et Mockito
+Implémenter les design patterns Repository et Singleton
+Ajouter un système de logging (LOGGER)
+Utiliser Spring Data pour l'accès aux données
+Mettre les validations
+
+​
+
+Utiliser les fonctionnalités Java 8 :
+
+Stream API
+Lambda expressions
+Java Time API
+Collection API et Hashmaps
+Optional
+
+​
+
+Outils de travail :
+
+Gérer le projet avec Git en utilisant des branches
+Utiliser un IDE de votre choix
+Utiliser JIRA pour la gestion du projet en utilisant la méthode Scrum et en le liant correctement avec Git
+Lombok
+Spring Boot DevTools
+SonarLint
+Debugger
+
+​
+
+Interdictions et restrictions :
+
+Ne pas utiliser Spring MVC (pas de vues, pas de @Controller mais utiliser @RestController à sa place)
+Pas de JSP/Thymeleaf
+Pas de configurations XML (tout avec des annotations) sauf en cas de nécessité
