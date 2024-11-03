@@ -45,7 +45,6 @@ public class TrainerControllerIntegrationTest {
                 .lastName("Doe")
                 .email("john.doe@formation.com")
                 .specialty("Java Development")
-                .courses(null)
                 .build();
     }
 
@@ -122,4 +121,5 @@ public class TrainerControllerIntegrationTest {
         mockMvc.perform(delete("/api/trainers/1"))
                 .andExpect(status().isNoContent());
     }
+
 }
