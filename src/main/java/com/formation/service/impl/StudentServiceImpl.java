@@ -5,32 +5,32 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import com.formation.entity.Student;
-import com.formation.exception.BusinessException;
-import com.formation.exception.ResourceNotFoundException;
 import com.formation.repository.StudentRepository;
 import com.formation.service.StudentService;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 @Service
 @Transactional
+@Validated
 public class StudentServiceImpl implements StudentService {
     
     @Autowired
     private StudentRepository studentRepository;
     
     @Override
-    public Student save(Student student) {
-        if (studentRepository.existsByEmail(student.getEmail())) {
-            throw new BusinessException("A student with email " + student.getEmail() + " already exists");
-        }
+    public Student save(@Valid @NotNull Student student) {
         return studentRepository.save(student);
     }
     
     @Override
-    public Student findById(Long id) {
+    public Student findById(@NotNull Long id) {
         return studentRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
+            .orElse(null);
     }
     
     @Override
@@ -39,23 +39,12 @@ public class StudentServiceImpl implements StudentService {
     }
     
     @Override
-    public Student update(Student student) {
-        Student existingStudent = findById(student.getId());
-        
-        if (!existingStudent.getEmail().equals(student.getEmail()) && 
-            studentRepository.existsByEmail(student.getEmail())) {
-            throw new BusinessException("A student with email " + student.getEmail() + " already exists");
-        }
-        
+    public Student update(@Valid @NotNull Student student) {
         return studentRepository.save(student);
     }
     
     @Override
-    public void delete(Long id) {
-        Student student = findById(id);
-        if (student.getCourse() != null) {
-            throw new BusinessException("Cannot delete student enrolled in a course");
-        }
+    public void delete(@NotNull Long id) {
         studentRepository.deleteById(id);
     }
     

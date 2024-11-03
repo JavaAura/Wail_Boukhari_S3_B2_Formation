@@ -6,13 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.formation.entity.Course;
-import com.formation.exception.BusinessException;
-import com.formation.exception.ResourceNotFoundException;
 import com.formation.repository.CourseRepository;
 import com.formation.service.CourseService;
 import com.formation.utils.DateUtils;
+import javax.persistence.EntityNotFoundException;
 
 @Service
 @Transactional
@@ -23,14 +21,14 @@ public class CourseServiceImpl implements CourseService {
     
     @Override
     public Course save(Course course) {
-        validateCourse(course);
+        validateBusinessRules(course);
         return courseRepository.save(course);
     }
     
     @Override
     public Course findById(Long id) {
         return courseRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
+            .orElseThrow(() -> new EntityNotFoundException("Course not found with id: " + id));
     }
     
     @Override
@@ -40,8 +38,8 @@ public class CourseServiceImpl implements CourseService {
     
     @Override
     public Course update(Course course) {
-        Course existingCourse = findById(course.getId());
-        validateCourse(course);
+        findById(course.getId());
+        validateBusinessRules(course);
         return courseRepository.save(course);
     }
     
@@ -49,7 +47,7 @@ public class CourseServiceImpl implements CourseService {
     public void delete(Long id) {
         Course course = findById(id);
         if (!course.getStudents().isEmpty()) {
-            throw new BusinessException("Cannot delete course with enrolled students");
+            throw new EntityNotFoundException("Cannot delete course with enrolled students");
         }
         courseRepository.deleteById(id);
     }
@@ -61,9 +59,7 @@ public class CourseServiceImpl implements CourseService {
     
     @Override
     public Page<Course> findByDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        if (!DateUtils.isDateRangeValid(startDate, endDate)) {
-            throw new BusinessException("Invalid date range: start date must be before or equal to end date");
-        }
+        validateDateRange(startDate, endDate);
         return courseRepository.findByDateRange(startDate, endDate, pageable);
     }
     
@@ -97,15 +93,23 @@ public class CourseServiceImpl implements CourseService {
         return courseRepository.findCoursesWithoutTrainer(pageable);
     }
     
-    private void validateCourse(Course course) {
-        if (!DateUtils.isDateRangeValid(course.getStartDate(), course.getEndDate())) {
-            throw new BusinessException("Start date must be before end date");
+    private void validateBusinessRules(Course course) {
+        validateDateRange(course.getStartDate(), course.getEndDate());
+        validateCapacity(course);
+    }
+    
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (!DateUtils.isDateRangeValid(startDate, endDate)) {
+            throw new EntityNotFoundException("Start date must be before or equal to end date");
         }
+    }
+    
+    private void validateCapacity(Course course) {
         if (course.getMinCapacity() > course.getMaxCapacity()) {
-            throw new BusinessException("Minimum capacity must be less than or equal to maximum capacity");
+            throw new EntityNotFoundException("Minimum capacity must be less than or equal to maximum capacity");
         }
         if (course.getMaxCapacity() < course.getCurrentCapacity()) {
-            throw new BusinessException("Maximum capacity cannot be less than current capacity");
+            throw new EntityNotFoundException("Maximum capacity cannot be less than current capacity");
         }
     }
 }

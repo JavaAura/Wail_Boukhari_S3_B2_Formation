@@ -7,8 +7,10 @@ import java.util.Set;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import javax.persistence.*;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -42,10 +44,12 @@ public class ClassRoom {
     @Column(nullable = false, unique = true, length = 20)
     private String roomNumber;
     
+    @Min(value = 0, message = "Current capacity cannot be negative")
     @Column(nullable = false)
     @Builder.Default
     private Integer currentCapacity = 0;
     
+    @Min(value = 1, message = "Maximum capacity must be at least 1")
     @Column(nullable = false)
     @Builder.Default
     private Integer maxCapacity = 30;

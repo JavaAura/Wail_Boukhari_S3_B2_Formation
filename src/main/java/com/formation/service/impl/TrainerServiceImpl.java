@@ -5,12 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.formation.entity.Trainer;
-import com.formation.exception.BusinessException;
-import com.formation.exception.ResourceNotFoundException;
 import com.formation.repository.TrainerRepository;
 import com.formation.service.TrainerService;
+import javax.persistence.EntityNotFoundException;
 
 @Service
 @Transactional
@@ -21,8 +19,9 @@ public class TrainerServiceImpl implements TrainerService {
     
     @Override
     public Trainer save(Trainer trainer) {
+        validateBusinessRules(trainer);
         if (trainerRepository.existsByEmail(trainer.getEmail())) {
-            throw new BusinessException("A trainer with email " + trainer.getEmail() + " already exists");
+            throw new EntityNotFoundException("A trainer with email " + trainer.getEmail() + " already exists");
         }
         return trainerRepository.save(trainer);
     }
@@ -30,7 +29,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public Trainer findById(Long id) {
         return trainerRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Trainer not found with id: " + id));
+            .orElseThrow(() -> new EntityNotFoundException("Trainer not found with id: " + id));
     }
     
     @Override
@@ -44,9 +43,10 @@ public class TrainerServiceImpl implements TrainerService {
         
         if (!existingTrainer.getEmail().equals(trainer.getEmail()) && 
             trainerRepository.existsByEmail(trainer.getEmail())) {
-            throw new BusinessException("A trainer with email " + trainer.getEmail() + " already exists");
+            throw new EntityNotFoundException("A trainer with email " + trainer.getEmail() + " already exists");
         }
         
+        validateBusinessRules(trainer);
         return trainerRepository.save(trainer);
     }
     
@@ -54,7 +54,7 @@ public class TrainerServiceImpl implements TrainerService {
     public void delete(Long id) {
         Trainer trainer = findById(id);
         if (!trainer.getCourses().isEmpty()) {
-            throw new BusinessException("Cannot delete trainer with assigned courses");
+            throw new EntityNotFoundException("Cannot delete trainer with assigned courses");
         }
         trainerRepository.deleteById(id);
     }
@@ -92,5 +92,11 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public Page<Trainer> findTrainersWithoutCourses(Pageable pageable) {
         return trainerRepository.findTrainersWithoutCourses(pageable);
+    }
+    
+    private void validateBusinessRules(Trainer trainer) {
+        if (trainer.getCourses() != null && trainer.getCourses().size() > 5) {
+            throw new EntityNotFoundException("A trainer cannot have more than 5 courses");
+        }
     }
 }

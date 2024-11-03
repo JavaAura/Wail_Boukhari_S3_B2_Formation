@@ -1,16 +1,13 @@
 package com.formation.exception;
 
 import lombok.Getter;
-import java.time.LocalDateTime;
 
 @Getter
 public abstract class BaseException extends RuntimeException {
-    private final LocalDateTime timestamp;
-    private final String message;
+    private final ExceptionCode code;
 
-    protected BaseException(String message) {
-        super(message);
-        this.timestamp = LocalDateTime.now();
-        this.message = message;
+    protected BaseException(ExceptionCode code, Object... args) {
+        super(String.format(code.getMessageTemplate(), args));
+        this.code = code;
     }
 }

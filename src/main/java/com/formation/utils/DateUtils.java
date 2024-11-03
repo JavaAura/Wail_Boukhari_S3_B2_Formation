@@ -1,12 +1,10 @@
 package com.formation.utils;
-
-
 import java.time.LocalDate;
 
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class DateUtils {
+public class  DateUtils    {
     public static boolean isDateRangeValid(LocalDate startDate, LocalDate endDate) {
         return startDate != null && endDate != null && !startDate.isAfter(endDate);
     }
