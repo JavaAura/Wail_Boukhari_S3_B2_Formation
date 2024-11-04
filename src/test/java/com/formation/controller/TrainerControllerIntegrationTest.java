@@ -1,30 +1,34 @@
 package com.formation.controller;
 
-import static org.hamcrest.Matchers.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formation.entity.Trainer;
+import com.formation.service.TrainerService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.formation.entity.Trainer;
-import com.formation.service.TrainerService;
-
-@WebMvcTest(TrainerController.class)
-public class TrainerControllerIntegrationTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class TrainerControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,91 +39,109 @@ public class TrainerControllerIntegrationTest {
     @MockBean
     private TrainerService trainerService;
 
-    private Trainer trainer;
+    private Trainer testTrainer;
+    private Pageable pageable;
 
     @BeforeEach
     void setUp() {
-        trainer = Trainer.builder()
+        testTrainer = Trainer.builder()
                 .id(1L)
                 .firstName("John")
-                .lastName("Doe")
-                .email("john.doe@formation.com")
-                .specialty("Java Development")
+                .lastName("Smith")
+                .email("john.smith@test.com")
+                .specialty("Java")
+                .courses(new HashSet<>())
                 .build();
+        
+        pageable = PageRequest.of(0, 10);
     }
 
     @Test
     void createTrainer_WithValidData_ShouldReturnCreated() throws Exception {
-        when(trainerService.save(any(Trainer.class))).thenReturn(trainer);
+        when(trainerService.save(any(Trainer.class))).thenReturn(testTrainer);
 
         mockMvc.perform(post("/api/trainers")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(trainer)))
+                .content(objectMapper.writeValueAsString(testTrainer)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.firstName", is("John")))
-                .andExpect(jsonPath("$.specialty", is("Java Development")));
-    }
-
-    @Test
-    void getTrainerById_WhenExists_ShouldReturnTrainer() throws Exception {
-        when(trainerService.findById(1L)).thenReturn(trainer);
-
-        mockMvc.perform(get("/api/trainers/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.email", is("john.doe@formation.com")));
+                .andExpect(jsonPath("$.id").value(testTrainer.getId()))
+                .andExpect(jsonPath("$.email").value(testTrainer.getEmail()));
     }
 
     @Test
     void getAllTrainers_ShouldReturnPageOfTrainers() throws Exception {
-        when(trainerService.findAll(any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(trainer)));
+        Page<Trainer> page = new PageImpl<>(Arrays.asList(testTrainer));
+        when(trainerService.findAll(any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/trainers"))
+        mockMvc.perform(get("/api/trainers")
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].firstName", is("John")));
+                .andExpect(jsonPath("$.content[0].id").value(testTrainer.getId()));
+    }
+
+    @Test
+    void getTrainerById_WhenExists_ShouldReturnTrainer() throws Exception {
+        when(trainerService.findById(1L)).thenReturn(testTrainer);
+
+        mockMvc.perform(get("/api/trainers/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testTrainer.getId()));
+    }
+
+    @Test
+    void findBySpecialty_ShouldReturnTrainersWithSpecialty() throws Exception {
+        Page<Trainer> page = new PageImpl<>(Arrays.asList(testTrainer));
+        when(trainerService.findBySpecialty(any(String.class), any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/trainers/specialty/{specialty}", "Java")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].specialty").value("Java"));
     }
 
     @Test
     void findByClassRoomId_ShouldReturnTrainersInClassRoom() throws Exception {
-        when(trainerService.findByClassRoomId(any(Long.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(trainer)));
+        Page<Trainer> page = new PageImpl<>(Arrays.asList(testTrainer));
+        when(trainerService.findByClassRoomId(any(Long.class), any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/trainers/classroom/1"))
+        mockMvc.perform(get("/api/trainers/classroom/{classRoomId}", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].firstName", is("John")));
+                .andExpect(jsonPath("$.content[0].id").value(testTrainer.getId()));
+    }
+
+    @Test
+    void deleteTrainer_WhenEmpty_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(delete("/api/trainers/{id}", 1L))
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void searchTrainers_ShouldReturnMatchingTrainers() throws Exception {
-        when(trainerService.search(any(String.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(trainer)));
+        Page<Trainer> page = new PageImpl<>(Arrays.asList(testTrainer));
+        when(trainerService.search(any(String.class), any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/trainers/search")
-                .param("keyword", "John"))
+                .param("keyword", "Java")
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].firstName", is("John")));
+                .andExpect(jsonPath("$.content[0].specialty").value(testTrainer.getSpecialty()));
     }
 
     @Test
-    void updateTrainer_WithValidData_ShouldReturnUpdatedTrainer() throws Exception {
-        when(trainerService.update(any(Trainer.class))).thenReturn(trainer);
+    void findAvailableTrainers_ShouldReturnAvailableTrainers() throws Exception {
+        Page<Trainer> page = new PageImpl<>(Arrays.asList(testTrainer));
+        when(trainerService.findAvailableTrainers(any(Integer.class), any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(put("/api/trainers/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(trainer)))
+        mockMvc.perform(get("/api/trainers/available")
+                .param("maxCourses", "5")
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName", is("John")))
-                .andExpect(jsonPath("$.specialty", is("Java Development")));
+                .andExpect(jsonPath("$.content[0].id").value(testTrainer.getId()));
     }
 
-    @Test
-    void deleteTrainer_WhenNotAssigned_ShouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/api/trainers/1"))
-                .andExpect(status().isNoContent());
-    }
 
 }

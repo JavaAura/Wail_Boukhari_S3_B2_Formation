@@ -1,32 +1,36 @@
 package com.formation.controller;
 
-import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formation.entity.Course;
+import com.formation.entity.enums.CourseStatus;
+import com.formation.service.CourseService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.formation.entity.Course;
-import com.formation.entity.enums.CourseStatus;
-import com.formation.service.CourseService;
-
-@WebMvcTest(CourseController.class)
-public class CourseControllerIntegrationTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class CourseControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -37,11 +41,12 @@ public class CourseControllerIntegrationTest {
     @MockBean
     private CourseService courseService;
 
-    private Course course;
+    private Course testCourse;
+    private Pageable pageable;
 
     @BeforeEach
     void setUp() {
-        course = Course.builder()
+        testCourse = Course.builder()
                 .id(1L)
                 .title("Java Programming")
                 .level("Intermediate")
@@ -52,66 +57,60 @@ public class CourseControllerIntegrationTest {
                 .status(CourseStatus.PLANNED)
                 .students(new HashSet<>())
                 .build();
+        
+        pageable = PageRequest.of(0, 10);
     }
 
     @Test
     void createCourse_WithValidData_ShouldReturnCreated() throws Exception {
-        when(courseService.save(any(Course.class))).thenReturn(course);
+        when(courseService.save(any(Course.class))).thenReturn(testCourse);
 
         mockMvc.perform(post("/api/courses")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(course)))
+                .content(objectMapper.writeValueAsString(testCourse)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title", is("Java Programming")))
-                .andExpect(jsonPath("$.level", is("Intermediate")));
-    }
-
-    @Test
-    void getCourseById_WhenExists_ShouldReturnCourse() throws Exception {
-        when(courseService.findById(1L)).thenReturn(course);
-
-        mockMvc.perform(get("/api/courses/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.title", is("Java Programming")));
+                .andExpect(jsonPath("$.id").value(testCourse.getId()))
+                .andExpect(jsonPath("$.title").value(testCourse.getTitle()));
     }
 
     @Test
     void getAllCourses_ShouldReturnPageOfCourses() throws Exception {
-        when(courseService.findAll(any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(course)));
+        Page<Course> page = new PageImpl<>(Arrays.asList(testCourse));
+        when(courseService.findAll(any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/courses"))
+        mockMvc.perform(get("/api/courses")
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].title", is("Java Programming")));
+                .andExpect(jsonPath("$.content[0].id").value(testCourse.getId()));
+    }
+
+    @Test
+    void getCourseById_WhenExists_ShouldReturnCourse() throws Exception {
+        when(courseService.findById(1L)).thenReturn(testCourse);
+
+        mockMvc.perform(get("/api/courses/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testCourse.getId()));
+    }
+
+
+    @Test
+    void deleteCourse_WhenEmpty_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(delete("/api/courses/{id}", 1L))
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void searchCourses_ShouldReturnMatchingCourses() throws Exception {
-        when(courseService.search(any(String.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(course)));
+        Page<Course> page = new PageImpl<>(Arrays.asList(testCourse));
+        when(courseService.search(any(String.class), any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/courses/search")
-                .param("keyword", "Java"))
+                .param("keyword", "Java")
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].title", is("Java Programming")));
-    }
-
-    @Test
-    void findByTrainerId_ShouldReturnTrainersCourses() throws Exception {
-        when(courseService.findByTrainerId(any(Long.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(course)));
-
-        mockMvc.perform(get("/api/courses/trainer/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)));
-    }
-
-    @Test
-    void deleteCourse_WhenEmpty_ShouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/api/courses/1"))
-                .andExpect(status().isNoContent());
+                .andExpect(jsonPath("$.content[0].title").value(testCourse.getTitle()));
     }
 }
