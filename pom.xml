@@ -23,6 +23,8 @@
         <jakarta.version>2.0.1</jakarta.version>
         <jacoco.version>0.8.7</jacoco.version> <!-- Updated Jacoco to Java 8-compatible version -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.login>sqa_9a00c8675aecae8240bbd7677ab493d6b5066dec</sonar.login>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -52,12 +54,12 @@
             <scope>runtime</scope>
         </dependency>
 
-   <dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <version>42.6.0</version>
-    <scope>runtime</scope>
-</dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.6.0</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Validation API -->
         <dependency>
@@ -66,18 +68,18 @@
         </dependency>
 
         <!-- Swagger for API Documentation (Java 8-compatible) -->
-<dependency>
-    <groupId>org.springdoc</groupId>
-    <artifactId>springdoc-openapi-ui</artifactId>
-    <version>1.7.0</version>
-</dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.7.0</version>
+        </dependency>
 
         <!-- Lombok for reducing boilerplate code -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-             <version>1.18.30</version>
-            <optional>true</optional>
+            <version>1.18.30</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Testing Dependencies -->
@@ -146,8 +148,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>17</source>
+                    <target>17</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
